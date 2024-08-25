@@ -1,0 +1,115 @@
+## template: jinja
+#cloud-config
+{% set username = 'YOUR_NAME' %}
+{% set public_ssh_key = 'YOUR PUBLIC SSH KEY' %}
+{% set mail_from = 'EMAIL' %}
+{% set mail_to = 'EMAIL' %}
+{% set mail_password = 'mail password' %}
+{% set reboot_time = '08:00' %}
+{% set hostname = 'webspace' %}
+{% set keyboard_layout = 'us' %}
+
+keyboard:
+  layout: {{ keyboard_layout}}
+hostname: {{ hostname }}
+timezone: {{ time_zone }}
+users:
+  - name: {{ username }}
+    groups: users, admin, docker, systemd-journal
+    sudo: ALL=(ALL) NOPASSWD:ALL
+    shell: /bin/bash
+    ssh_authorized_keys:
+      - {{ public_ssh_key }}
+apt:
+  sources:
+    docker.list:
+      source: deb [arch=amd64] https://download.docker.com/linux/ubuntu $RELEASE stable
+      keyid: 9DC858229FC7DD38854AE2D88D81803C0EBFCD88
+package_update: true
+package_upgrade: true
+packages:
+  - wget
+  - fail2ban
+  - ufw
+  - ca-certificates
+  - curl
+  - docker-ce
+  - docker-ce-cli
+  - containerd.io
+  - docker-buildx-plugin
+  - docker-compose-plugin
+  - msmtp
+write_files:
+  - path: /etc/docker/daemon.json
+    content: |
+      {
+       "log-driver": "journald"
+      }
+    owner: 'root:root'
+    permissions: '0644'
+  - path: /etc/msmtprc
+    content: |
+      # Set default values for all following accounts.
+      defaults
+      auth           on
+      tls            on
+      tls_trust_file /etc/ssl/certs/ca-certificates.crt
+      logfile        /var/log/msmtp.log
+      # Gmail
+      account        gmail
+      host           smtp.gmail.com
+      port           587
+      from           {{ mail_from }}
+      user           {{ mail_to }}
+      password       {{ mail_password }}
+      # Set a default account
+      # This needs to be at the end!
+      account default: gmail
+    owner: 'root:root'
+    permissions: '0600'
+  - path: /etc/logrotate.d/msmtp
+    content: |
+      /var/log/msmtp.log
+      {
+        rotate 6
+        monthly
+        compress
+        missingok
+        notifempty
+      }
+    owner: 'root:root'
+    permissions: '0644'
+  - path: /etc/apt/apt.conf.d/51unattended-upgrades-custom
+    content: |
+      Unattended-Upgrade::Allowed-Origins {
+        "${distro_id}:${distro_codename}";
+        "${distro_id}:${distro_codename}-security";
+        "${distro_id}ESMApps:${distro_codename}-apps-security";
+        "${distro_id}ESM:${distro_codename}-infra-security";
+        "${distro_id}:${distro_codename}-updates";
+        "Docker:${distro_codename}";
+        "Netdata:${distro_codename}";
+      };
+      Unattended-Upgrade::Mail "{{ mail_to }}";
+      Unattended-Upgrade::MailReport "on-change";
+      Unattended-Upgrade::Remove-Unused-Kernel-Packages "true";
+      Unattended-Upgrade::Remove-New-Unused-Dependencies "true";
+      Unattended-Upgrade::Remove-Unused-Dependencies "true";
+      Unattended-Upgrade::Automatic-Reboot "true";
+      Unattended-Upgrade::Automatic-Reboot-Time "08:00";
+    owner: 'root:root'
+    permissions: '0644'
+runcmd:
+  - printf "[sshd]\nenabled = true\nbanaction = iptables-multiport" > /etc/fail2ban/jail.local
+  - systemctl enable fail2ban
+  - ufw allow OpenSSH
+  - ufw enable
+  - ufw allow http
+  - ufw allow https
+  - sed -i -e '/^\(#\|\)PermitRootLogin/s/^.*$/PermitRootLogin no/' /etc/ssh/sshd_config
+  - sed -i -e '/^\(#\|\)PasswordAuthentication/s/^.*$/PasswordAuthentication no/' /etc/ssh/sshd_config
+  - sed -i -e '/^\(#\|\)MaxAuthTries/s/^.*$/MaxAuthTries 2/' /etc/ssh/sshd_config
+  - sed -i '$a AllowUsers {{ username }}' /etc/ssh/sshd_config
+  - ln -s /usr/bin/msmtp /usr/sbin/sendmail
+  - docker network create proxy-network
+  - reboot
