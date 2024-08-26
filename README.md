@@ -11,7 +11,7 @@ Give this repo a star and you will be the first to know!
 Take this [cloud-init](cloud-init/cloud-init.j2) template and put it into you VPS provider of choice who supports `cloud-init`.
 Adjust the first couple of values and you will get a server with these things taken care of:
 
-- [x]Create your user
+- [x] Create your user
   - [x] with your username
   - [x] add the user to groups users, admin, docker, systemd-journal
   - [x] set the shell to bash
