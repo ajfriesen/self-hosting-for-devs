@@ -1,6 +1,6 @@
 {
 	# Global options block. Entirely optional, https is on by default
-    # debug
+        # debug
 	# Optional email key for lets encrypt
 	# email example@example.com
 	# Optional staging lets encrypt for testing. Comment out for production.
