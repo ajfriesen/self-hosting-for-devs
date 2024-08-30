@@ -1,0 +1,18 @@
+services:
+  hello-world:
+    container_name: hello-world
+    image: ghcr.io/andrej-semerdjiev/example-go-app:latest
+    env_file: .env
+   
+  database:
+    container_name: hello-world-database
+    image: postgres:15
+    environment:
+      POSTGRES_USER: postgres
+    env_file: .env
+    volumes:
+      - ./database:/var/lib/postgresql/data
+
+networks:
+  proxy-network:
+    external: true
