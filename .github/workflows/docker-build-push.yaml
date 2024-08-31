@@ -11,8 +11,10 @@ jobs:
   push-to-registry:
     name: Build and push Docker image to GitHub Container Registry
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
     steps:
-    
       - name: Checkout code
         uses: actions/checkout@v4
 
