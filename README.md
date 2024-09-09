@@ -8,7 +8,7 @@ Give this repo a star and you will be the first to know!
 
 ## cloud-init
 
-Take this [cloud-init](cloud-init/cloud-init.j2) template and put it into you VPS provider of choice who supports `cloud-init`.
+Take this [cloud-init](cloud-init/cloud-init.yaml.j2) template and put it into you VPS provider of choice who supports `cloud-init`.
 Adjust the first couple of values and you will get a server with these things taken care of:
 
 - [x] Create your user
